@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>四级词汇小站</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: '微软雅黑', sans-serif;
+        }
+
+        body {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color); /* 使用CSS变量控制颜色 */
+            min-height: 100vh; /* 占满视口高度 */
+            display: flex; /* 启用Flex布局 */
+            flex-direction: column; /* 子元素垂直排列 */
+            justify-content: center; /* 垂直居中 */
+            align-items: center; /* 水平居中 */
+        }
+
+        .header {
+            margin-bottom: 30px;
+            text-align: center;
+            color: var(--text-color);
+        }
+
+        .nav {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .nav button {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 20px;
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+            transform: scale(1); /* 初始缩放 */
+        }
+        .nav button:hover {
+            background: #2980b9;
+            transform: scale(1.05); /* 悬停时放大 */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* 悬停阴影 */
+        }
+        .nav button.active {
+            background: #2980b9;
+            transform: scale(1.05); /* 激活时保持放大 */
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2); /* 激活阴影更明显 */
+        }
+        #modeBtn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.1);
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+        #modeBtn:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .nav button.active {
+            background: #2980b9;
+            transform: scale(1.05);
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 90%; /* 响应式宽度 */
+            max-width: 600px; /* 最大宽度限制 */
+            margin: 0 auto; /* 水平居中 */
+            position: relative; /* 为内部元素提供定位上下文 */
+        }
+
+        .question {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            color: var(--text-color);
+            min-height: 60px;
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .option-btn {
+            padding: 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 1em;
+        }
+
+        .option-btn:hover {
+            border-color: #3498db;
+            background: #f8fcff;
+        }
+
+        .feedback {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .correct {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .wrong {
+            background: #ffebee;
+            color: #b71c1c;
+        }
+
+        .stats {
+            margin-top: 20px;
+            color: #7f8c8d;
+        }
+
+        .learning-progress {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            padding: 8px 16px;
+            background: var(--bg-color);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            color: var(--text-color);
+            font-size: 0.9em;
+        }
+
+        .error-book {
+            display: none;
+            margin-top: 20px;
+            position: fixed; /* 固定定位在右侧 */
+            right: 20px; /* 距离右侧20px */
+            top: 100px; /* 距离顶部100px */
+            width: 300px; /* 调整为更适合查看的宽度 */
+            max-height: 80vh; /* 最大高度为视口80% */
+            overflow-y: auto; /* 内容溢出时滚动 */
+            background: white; /* 背景色 */
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 100; /* 确保在最上层 */
+        }
+        /* 自定义滚动条样式 */
+        .error-book::-webkit-scrollbar {
+            width: 8px; /* 滚动条宽度 */
+        }
+        .error-book::-webkit-scrollbar-track {
+            background: #f1f1f1; /* 轨道背景色 */
+            border-radius: 4px;
+        }
+        .error-book::-webkit-scrollbar-thumb {
+            background: #c1c1c1; /* 滑块颜色 */
+            border-radius: 4px;
+        }
+        .error-book::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1; /* 悬停时滑块颜色 */
+        }
+        /* 深色模式滚动条样式 */
+        .dark-mode .error-book::-webkit-scrollbar-track {
+            background: #3a4556; /* 深色轨道背景 */
+        }
+        .dark-mode .error-book::-webkit-scrollbar-thumb {
+            background: #5a6779; /* 深色滑块颜色 */
+        }
+        .dark-mode .error-book::-webkit-scrollbar-thumb:hover {
+            background: #718096; /* 深色悬停滑块颜色 */
+        }
+        /* 深色模式下错题本标题样式 */
+        .dark-mode .error-book h3 {
+            color: var(--text-color);
+        }
+
+        .error-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: #fff3e0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center; /* 垂直居中 */
+            justify-content: space-between; /* 子元素两端对齐 */
+        }
+
+        .error-delete-btn {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #ff9800;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            flex-shrink: 0;
+            margin-left: 15px;
+        }
+
+        .error-delete-btn:hover {
+            background: #f44336;
+        }
+        /* 深色模式下错题项样式 */
+        .dark-mode .error-item {
+            background: #2d3748;
+            color: var(--text-color);
+        }
+        /* 深色模式下错题本容器样式 */
+        .dark-mode .error-book {
+            background: #2d3748;
+            box-shadow: 0 4px 6px rgba(255,255,255,0.1);
+        }
+
+        .celebrate {
+            animation: celebrate 1s ease-out forwards;
+        }
+        /* 深色模式下答对动画样式 */
+        /* 星星动画样式 */
+        .star {
+            position: absolute;
+            pointer-events: none;
+            font-size: 20px;
+            animation: starPop 0.5s ease-out;
+        }
+        .star-glow {
+            animation: starGlow 0.8s ease-in-out;
+        }
+        .star-fall {
+            animation: starFall 1s ease-in forwards;
+        }
+        @keyframes starPop {
+            0% { transform: scale(0) translateY(0); opacity: 0; }
+            50% { transform: scale(1.2) translateY(-10px); }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        @keyframes starGlow {
+            0% { filter: drop-shadow(0 0 0px #ffd700); }
+            50% { filter: drop-shadow(0 0 8px #ffd700); }
+            100% { filter: drop-shadow(0 0 0px #ffd700); }
+        }
+        @keyframes starFall {
+            to { transform: translateY(100vh); opacity: 0; }
+        }
+        .dark-mode .celebrate {
+            animation: dark-celebrate 1s ease-out forwards;
+        }
+
+        .shake {
+            animation: shake 0.5s ease-in-out forwards;
+        }
+        /* 深色模式下答错动画样式 */
+        .dark-mode .shake {
+            animation: dark-shake 0.5s ease-in-out forwards;
+        }
+
+        @keyframes celebrate {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        /* 深色模式答对动画 */
+        @keyframes dark-celebrate {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+        /* 深色模式答错动画 */
+        @keyframes dark-shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+        
+        /* 定义默认主题颜色 */
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #2c3e50;
+        }
+        /* 深色模式覆盖 */
+        .dark-mode {
+            --bg-color: #1f2732;
+            --text-color: #e0e0e0;
+        }
+        /* 深色模式下容器样式调整 */
+        .dark-mode .container {
+            background: #2d3748;
+            box-shadow: 0 4px 6px rgba(255,255,255,0.1);
+        }
+        /* 深色模式下错题本样式 */
+        .dark-mode .error-book {
+            background: #2d3748;
+            box-shadow: 0 4px 6px rgba(255,255,255,0.1);
+            background: #2d3748;
+            box-shadow: 0 4px 6px rgba(255,255,255,0.1);
+        }
+        /* 深色模式下选项按钮样式 */
+        .dark-mode .option-btn {
+            background: #2d3748;
+            border-color: #4a5568;
+            color: var(--text-color);
+        }
+        .dark-mode .option-btn:hover {
+            border-color: #61a5c2; /* 深色模式悬停边框颜色 */
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>四级词汇小站</h1>
+        <div class="nav">
+            <button id="practiceBtn" class="active">词汇练习</button>
+            <button id="errorBookBtn">错题本</button>
+            <button id="reviewBtn">复习模式</button>
+            <button id="modeBtn">🌙</button> <!-- 添加模式切换按钮 -->
+        </div>
+    </div>
+
+<div class="container">
+    <!-- 练习区域，通过 id "practiceSection" 可在 JavaScript 中操作该元素 -->
+    <div id="practiceSection">
+        <!-- 用于显示问题的 div，通过 id "question" 可在 JavaScript 中动态设置问题内容 -->
+        <div class="question" id="question"></div>
+        <!-- 用于显示选项的 div，通过 id "options" 可在 JavaScript 中动态添加选项按钮 -->
+        <div class="options" id="options"></div>
+        <!-- 用于显示答题反馈信息的 div，通过 id "feedback" 可在 JavaScript 中动态设置反馈内容，初始状态为隐藏 -->
+        <div class="feedback" id="feedback"></div>
+        <!-- 用于显示当前得分的 div，类名为 stats，初始显示当前得分 0 -->
+        <div class="stats" id="stats">当前得分：0</div>
+        <!-- 用于显示学习进度的 div，通过 id "learningProgress" 可在 JavaScript 中动态更新学习进度，类名为 learning-progress -->
+        <div id="learningProgress" class="learning-progress">已学习：0/0</div>
+    </div>
+
+    <!-- 错题本区域，类名为 error-book，初始状态为隐藏，通过 id "errorBookSection" 可在 JavaScript 中操作该元素 -->
+    <div class="error-book" id="errorBookSection">
+        <!-- 错题本标题 -->
+        <h3>错题本（答对3次移除）</h3>
+        <!-- 用于显示错题列表的 div，通过 id "errorList" 可在 JavaScript 中动态添加错题项 -->
+        <div id="errorList"></div>
+    </div>
+</div>
+
+    <script>
+        // 需要避开的元素选择器（"四级词汇小站"标题、错题本标题、导航按钮）
+        const avoidSelectors = ['.header h1', '.error-book h3', '.nav button:not(#modeBtn)', '.option-btn', '.question', '.feedback', '.stats', '.learning-progress']; // 扩展避开区域：问题区、反馈区、统计区、进度区
+
+        // 获取需要避开的区域（带边距）
+        function getAvoidRegions(margin = 30) {
+            return avoidSelectors.map(selector => {
+                const el = document.querySelector(selector);
+                if (!el) return null;
+                const rect = el.getBoundingClientRect();
+                return {
+                    left: rect.left - margin,
+                    top: rect.top - margin,
+                    right: rect.right + margin,
+                    bottom: rect.bottom + margin
+                };
+            }).filter(Boolean);
+        }
+
+        // 生成安全的星星位置（避开目标区域）
+        function getSafeStarPosition() {
+            const regions = getAvoidRegions();
+            let x, y;
+            do {
+                x = Math.random() * window.innerWidth;
+                y = Math.random() * window.innerHeight;
+            } while (regions.some(region => {
+                return x >= region.left && x <= region.right &&
+                       y >= region.top && y <= region.bottom;
+            }));
+            return { x, y };
+        }
+
+        // 生成星星动画（修改后的逻辑）
+        function createCelebrationStars() {
+            for (let i = 0; i < 8; i++) {
+                const star = document.createElement('div');
+                star.className = 'star star-glow';
+                const { x, y } = getSafeStarPosition();
+                star.style.left = `${x}px`;
+                star.style.top = `${y}px`;
+                document.body.appendChild(star);
+                // 添加消失动画
+                setTimeout(() => star.remove(), 1500);
+            }
+        }
+
+        // 四级词汇模拟数据（可根据需要扩展
+// 初始化主题模式（读取localStorage）
+const initTheme = () => {
+    const isDark = localStorage.getItem('darkMode') === 'true';
+    document.body.classList.toggle('dark-mode', isDark);
+    document.getElementById('modeBtn').textContent = isDark ? '☀️' : '🌙';
+};
+initTheme();
+
+// 切换主题模式
+const toggleTheme = () => {
+    const isDark = document.body.classList.toggle('dark-mode');
+    localStorage.setItem('darkMode', isDark); // 保存用户选择
+    document.getElementById('modeBtn').textContent = isDark ? '☀️' : '🌙';
+};
+
+document.getElementById('modeBtn').addEventListener('click', toggleTheme); // 绑定点击事件
+
+        // 绑定复习模式按钮点击事件
+        document.getElementById('reviewBtn').addEventListener('click', () => {
+            currentAppMode = 'review';
+            document.querySelector('.nav button.active').classList.remove('active');
+            document.getElementById('reviewBtn').classList.add('active');
+            generateQuestion();
+        });
+
+        // 绑定常规练习按钮点击事件（覆盖原有active状态）
+        document.getElementById('practiceBtn').addEventListener('click', () => {
+            currentAppMode = 'practice';
+            document.querySelector('.nav button.active').classList.remove('active');
+            document.getElementById('practiceBtn').classList.add('active');
+            generateQuestion();
+        });
+
+// 四级词汇模拟数据（可根据需要扩展）
+const vocabData = [
+  { word: 'alter', chinese: '改变,改动,变更' },
+  { word: 'burst', chinese: '突然发生,爆裂' },
+  { word: 'dispose', chinese: '除掉;处置;解决;处理(of)' },
+  { word: 'blast', chinese: '爆炸;气流vi.炸,炸掉' },
+  { word: 'consume', chinese: '消耗,耗尽' },
+  { word: 'split', chinese: '劈开;割裂;分裂a.裂开的' },
+  { word: 'spit', chinese: '吐(唾液等);唾弃' },
+  { word: 'spill', chinese: '溢出,溅出,倒出' },
+  { word: 'slip', chinese: '滑动,滑落;忽略' },
+  { word: 'slide', chinese: '滑动,滑落n.滑动;滑面;幻灯片' },
+  { word: 'bacteria', chinese: '细菌' },
+  { word: 'breed', chinese: '种,品种v.繁殖,产仔' },
+  { word: 'budget', chinese: '预算v.编预算,作安排' },
+  { word: 'candidate', chinese: '候选人' },
+  { word: 'campus', chinese: '校园' },
+  { word: 'liberal', chinese: '慷慨的;丰富的;自由的' },
+  { word: 'transform', chinese: '转变,变革;变换' },
+  { word: 'transmit', chinese: '传播,播送;传递' },
+  { word: 'transplant', chinese: '移植' },
+  { word: 'transport', chinese: '运输,运送n.运输,运输工具' },
+  { word: 'shift', chinese: '转移;转动;转变' },
+  { word: 'vary', chinese: '变化,改变;使多样化' },
+  { word: 'vanish', chinese: '消灭,不见' },
+  { word: 'swallow', chinese: '吞下,咽下n.燕子' },
+  { word: 'suspicion', chinese: '怀疑,疑心' },
+  { word: 'suspicious', chinese: '怀疑的,可疑的' },
+  { word: 'mild', chinese: '温暖的,暖和的;温柔的,味淡的' },
+  { word: 'tender', chinese: '温柔的;脆弱的' },
+  { word: 'nuisance', chinese: '损害,妨害,讨厌(的人或事物)' },
+  { word: 'insignificant', chinese: '无意义的,无足轻重的;无价值的' },
+  { word: 'accelerate', chinese: '加速,促进' },
+  { word: 'absolute', chinese: '绝对的,无条件的;完全的' },
+  { word: 'boundary', chinese: '分界线,边界' },
+  { word: 'brake', chinese: '刹车,制动器v.刹住(车)' },
+  { word: 'catalog', chinese: '目录(册)v.编目' },
+  { word: 'vague', chinese: '模糊的,不明确的' },
+  { word: 'vain', chinese: '徒劳,白费' },
+  { word: 'extinct', chinese: '绝灭的,熄灭的' },
+  { word: 'extraordinary', chinese: '不平常的,特别的,非凡的' },
+  { word: 'extreme', chinese: '极度的,极端的n.极端,过分' },
+  { word: 'agent', chinese: '代理人,代理商;动因,原因' },
+  { word: 'alcohol', chinese: '含酒精的饮料,酒精' },
+  { word: 'appeal', chinese: '呼吁,恳求' },
+  { word: 'appreciate', chinese: '重视,赏识,欣赏' },
+  { word: 'approve', chinese: '赞成,同意,批准' },
+  { word: 'stimulate', chinese: '刺激,激励' },
+  { word: 'acquire', chinese: '取得,获得;学到' },
+  { word: 'accomplish', chinese: '完成,到达;实行' },
+  { word: 'network', chinese: '网状物;广播网,电视网;网络' },
+  { word: 'tide', chinese: '潮汐;潮流' },
+  { word: 'tidy', chinese: '整洁的,整齐的' },
+  { word: 'trace', chinese: '追踪,找到n.痕迹,踪迹' },
+  { word: 'torture', chinese: '拷打,折磨' },
+  { word: 'wander', chinese: '漫游,闲逛' },
+  { word: 'wax', chinese: '蜡' },
+  { word: 'weave', chinese: '织,编' },
+  { word: 'preserve', chinese: '保护,保存,保持,维持' },
+  { word: 'highlight', chinese: '强调,突出' },
+  { word: 'hence', chinese: '因此,所以;今后,从此' },
+  { word: 'herd', chinese: '兽群,牧群' },
+  { word: 'abuse', chinese: '滥用,虐待;谩骂' },
+  { word: 'academic', chinese: '学术的;高等院校的;研究院的' },
+  { word: 'academy', chinese: '(高等)专科院校;学会' },
+  { word: 'battery', chinese: '电池(组)' },
+  { word: 'barrier', chinese: '障碍;棚栏' },
+  { word: 'cargo', chinese: '(船、飞机等装载的)货物' },
+  { word: 'career', chinese: '生涯,职业' },
+  { word: 'vessel', chinese: '船舶;容器,器皿;血管' },
+  { word: 'vertical', chinese: '垂直的' },
+  { word: 'oblige', chinese: '迫使,责成;使感激' },
+  { word: 'obscure', chinese: '阴暗,模糊' },
+  { word: 'extent', chinese: '程度,范围,大小,限度' },
+  { word: 'exterior', chinese: '外部,外表a.外部的,外表的' },
+  { word: 'external', chinese: '外部的,外表的,外面的' },
+  { word: 'petrol', chinese: '汽油' },
+  { word: 'petroleum', chinese: '石油' },
+  { word: 'delay', chinese: '推迟,延误,耽搁' },
+  { word: 'decay', chinese: '腐烂,腐朽' },
+  { word: 'decent', chinese: '像样的,体面的' },
+  { word: 'route', chinese: '路;路线;航线' },
+  { word: 'ruin', chinese: '毁坏,破坏n.毁灭,[pl.]废墟' },
+  { word: 'sake', chinese: '缘故,理由' },
+  { word: 'satellite', chinese: '卫星' },
+  { word: 'scale', chinese: '大小,规模;等级;刻度' },
+  { word: 'temple', chinese: '庙宇' },
+  { word: 'tedious', chinese: '乏味道,单调的' },
+  { word: 'tend', chinese: '易于,趋向' },
+  { word: 'tendency', chinese: '趋向,趋势' },
+  { word: 'ultimate', chinese: '极端的,最大的,最终的n.极端' },
+  { word: 'undergo', chinese: '经历,遭受' },
+  { word: 'abundant', chinese: '丰富的,充裕的,大量的' },
+  { word: 'adopt', chinese: '收养;采用;采纳' },
+  { word: 'adapt', chinese: '适应,适合;改编,改写vt.使适应' },
+  { word: 'bachelor', chinese: '学士,学士学位;单身汉' },
+  { word: 'casual', chinese: '偶然的,碰巧的;临时的;非正式的' },
+  { word: 'trap', chinese: '陷阱,圈套v.设陷阱捕捉' },
+  { word: 'vacant', chinese: '空的,未占用的' },
+  { word: 'vacuum', chinese: '真空,真空吸尘器' },
+  { word: 'oral', chinese: '口头的,口述的,口的' },
+  { word: 'optics', chinese: '(单、复数同形)光学' },
+  { word: 'organ', chinese: '器官,风琴' },
+  { word: 'excess', chinese: '过分,过量,过剩' },
+  { word: 'expel', chinese: '驱逐,开除,赶出' },
+  { word: 'expend', chinese: '消费' },
+  { word: 'expenditure', chinese: '支出,消费;经费' },
+  { word: 'expense', chinese: '开销,费用' },
+  { word: 'expensive', chinese: '花钱多的;价格高贵的' },
+  { word: 'expand', chinese: '扩大,扩张;展开,膨胀' },
+  { word: 'expansion', chinese: '扩大,扩充;发展,膨胀' },
+  { word: 'private', chinese: '私人的,个人的' },
+  { word: 'individual', chinese: '个别的,单独的n.个人,个体' },
+  { word: 'personal', chinese: '个人的,私人的;亲自的' },
+  { word: 'personnel', chinese: '[总称]人员,员工;人事部门' },
+  { word: 'thePacificOcean', chinese: '太平洋' },
+  { word: 'theAtlanticOcean', chinese: '大西洋' },
+  { word: 'theArcticOcean', chinese: '北冰洋' },
+  { word: 'theAntarcticOcean', chinese: '南冰洋' },
+  { word: 'grant', chinese: '授予,同意,准予' },
+  { word: 'grand', chinese: '宏伟大,壮丽的,重大的' },
+  { word: 'invade', chinese: '侵入,侵略,侵袭' },
+  { word: 'acid', chinese: '酸,酸性物质a.酸的;尖刻的' },
+  { word: 'acknowledge', chinese: '承认;致谢' },
+  { word: 'balcony', chinese: '阳台' },
+  { word: 'calculate', chinese: '计算,核算' },
+  { word: 'calendar', chinese: '日历,月历' },
+  { word: 'optimistic', chinese: '乐观' },
+  { word: 'optional', chinese: '可以任选的,非强制的' },
+  { word: 'outstanding', chinese: '杰出的,突出的,显著的' },
+  { word: 'export', chinese: '出口(物)v.出口,输出' },
+  { word: 'import', chinese: '进口(物)v.进口,输入' },
+  { word: 'impose', chinese: '把...加强(on);采用,利用' },
+  { word: 'religion', chinese: '宗教,宗教信仰' },
+  { word: 'religious', chinese: '宗教的' },
+  { word: 'victim', chinese: '牺牲品,受害者' },
+  { word: 'video', chinese: '电视,视频a.电视的,录像的' },
+  { word: 'videotape', chinese: '录像磁带v.把...录在录像带上' },
+  { word: 'offend', chinese: '冒犯,触犯' },
+  { word: 'bother', chinese: '打搅,麻烦' },
+  { word: 'interfere', chinese: '干涉,干扰,妨碍' },
+  { word: 'internal', chinese: '内部的,国内的' },
+  { word: 'beforehand', chinese: '预先,事先' },
+  { word: 'racial', chinese: '人种的种族的' },
+  { word: 'radiation', chinese: '放射物,辐射' },
+  { word: 'radical', chinese: '根本的;激进的' },
+  { word: 'range', chinese: '幅度,范围v.(在某范围内)变动' },
+  { word: 'wonder', chinese: '惊奇,奇迹v.想知道,对...感到疑惑' },
+  { word: 'isolate', chinese: '使隔离,使孤立' },
+  { word: 'issue', chinese: '问题,争论点;发行,(报刊)一期' },
+  { word: 'hollow', chinese: '空的,中空的,空虚道' },
+  { word: 'hook', chinese: '钩vt.钩住' },
+  { word: 'adequate', chinese: '适当地;足够' },
+  { word: 'adhere', chinese: '粘附,附着;遵守,坚持' },
+  { word: 'ban', chinese: '取缔,禁止' },
+  { word: 'capture', chinese: '俘虏,捕获' },
+  { word: 'valid', chinese: '有效的,有根据的;正当的' },
+  { word: 'valley', chinese: '山谷,峡谷' },
+  { word: 'consistent', chinese: '坚固定;一致的,始终如一的' },
+  { word: 'continuous', chinese: '继续的,连续(不断)的' },
+  { word: 'continual', chinese: '不断地,频繁的' },
+  { word: 'explode', chinese: '爆炸;爆发;激增' },
+  { word: 'exploit', chinese: '剥削;利用,开采' },
+  { word: 'explore', chinese: '勘探' },
+  { word: 'explosion', chinese: '爆炸;爆发;激增' },
+  { word: 'explosive', chinese: '爆炸的;极易引起争论的' },
+  { word: 'remote', chinese: '遥远的,偏僻的' },
+  { word: 'removal', chinese: '除去,消除' },
+  { word: 'render', chinese: '使得,致使' },
+  { word: 'precaution', chinese: '预防,防备,警惕' },
+  { word: 'idle', chinese: '懒散的,无所事事的' },
+  { word: 'identify', chinese: '认出,鉴定' },
+  { word: 'identity', chinese: '身份;个性,特性' },
+  { word: 'poverty', chinese: '贫穷' },
+  { word: 'resistant', chinese: '(to)抵抗的,抗...的,耐...的' },
+  { word: 'resolve', chinese: '解决;决定,决意' },
+  { word: 'barrel', chinese: '桶' },
+  { word: 'bargain', chinese: '便宜货vi.讨价还价' },
+  { word: 'coarse', chinese: '粗的,粗糙的,粗劣的' },
+  { word: 'coach', chinese: '教练;长途公共汽车' },
+  { word: 'code', chinese: '准则,法规,密码' },
+  { word: 'coil', chinese: '线圈v.卷,盘绕' },
+  { word: 'adult', chinese: '成年人' },
+  { word: 'advertise', chinese: '为...做广告' },
+  { word: 'advertisement', chinese: '广告' },
+  { word: 'agency', chinese: '代理商,经销商' },
+  { word: 'focus', chinese: '(使)聚集n.焦点,中心,聚焦' },
+  { word: 'forbid', chinese: '不许,禁止' },
+  { word: 'debate', chinese: '辩论,争论' },
+  { word: 'debt', chinese: '欠债' },
+  { word: 'decade', chinese: '十年' },
+  { word: 'enclose', chinese: '围住;把...装入信封' },
+  { word: 'encounter', chinese: '遭遇,遭到' },
+  { word: 'globe', chinese: '地球,世界;地球仪' },
+  { word: 'global', chinese: '全球的;总的' },
+  { word: 'scan', chinese: '细看;扫描;浏览' },
+  { word: 'scandal', chinese: '丑事,丑闻' },
+  { word: 'significance', chinese: '意义;重要性' },
+  { word: 'subsequent', chinese: '随后的,后来的' },
+  { word: 'virtue', chinese: '美德,优点' },
+  { word: 'virtual', chinese: '实际上的,事实上的' },
+  { word: 'orient', chinese: '使适应,(to,toward)使朝向n.东方' },
+  { word: 'portion', chinese: '一部分' },
+  { word: 'target', chinese: '目标,靶子vt.瞄准' },
+  { word: 'portable', chinese: '手提式的' },
+  { word: 'decline', chinese: '拒绝,谢绝;下降' },
+  { word: 'illusion', chinese: '错觉' },
+  { word: 'likelihood', chinese: '可能,可能性' },
+  { word: 'stripe', chinese: '条纹' },
+  { word: 'emphasize', chinese: '强调,着重' },
+  { word: 'emotion', chinese: '情感,感情' },
+  { word: 'emotional', chinese: '感情的,情绪(上)的' },
+  { word: 'awful', chinese: '极坏的,威严的,可怕的' },
+  { word: 'awkward', chinese: '笨拙的,棘手的' },
+  { word: 'clue', chinese: '线索,提示' },
+  { word: 'collision', chinese: '碰撞,冲突' },
+  { word: 'device', chinese: '装置,设备' },
+  { word: 'devise', chinese: '发明,策划,想出' },
+  { word: 'inevitable', chinese: '不可避免的' },
+  { word: 'naval', chinese: '海军的' },
+  { word:'navigation',chinese:'航行'},
+  { word: 'necessity', chinese: '必需品;必要性' },
+  { word: 'previous', chinese: '先,前,以前的' },
+  { word: 'provision', chinese: '[pl.]给养,口粮;准备,设备,装置' },
+  { word: 'pursue', chinese: '追逐;追求;从事,进行' },
+  { word: 'stale', chinese: '不新鲜的,陈腐的' },
+  { word: 'substitute', chinese: '代用品vt.代替' },
+  { word: 'deserve', chinese: '应受,应得,值得' },
+  { word: 'discrimination', chinese: '歧视;辨别力' },
+  { word: 'professional', chinese: '职业的,专门的' },
+  { word: 'secure', chinese: '安全的,可靠的' },
+  { word: 'security', chinese: '安全,保障' },
+  { word: 'scratch', chinese: '抓,搔,扒' },
+  { word: 'talent', chinese: '才能,天资;人才' },
+  { word: 'insurance', chinese: '保险,保险费' },
+  { word: 'insure', chinese: '给...保险,保证,确保' },
+  { word: 'nevertheless', chinese: '仍然,然而,不过' },
+  { word: 'neutral', chinese: '中立的,中性的' },
+  { word: 'spot', chinese: '地点;斑点vt.认出,发现;玷污' },
+  { word: 'spray', chinese: '喷,(使)溅散' },
+  { word: 'medium', chinese: '中等的,适中的n.媒介物,新闻媒介' },
+  { word: 'media', chinese: '新闻传媒' },
+  { word: 'auxiliary', chinese: '辅助的,备用的' },
+  { word: 'automatic', chinese: '自动的' },
+  { word: 'compete', chinese: '竞争,比赛' },
+  { word: 'competent', chinese: '有能力的,能胜任的' },
+  { word: 'competition', chinese: '竞争,比赛' },
+  { word: 'distribute', chinese: '分发' },
+  { word: 'disturb', chinese: '打搅,妨碍' },
+  { word: 'infer', chinese: '推论,推断' },
+  { word: 'integrate', chinese: '(into,with)(使)成为一体,(使)合并' },
+  { word: 'moist', chinese: '潮湿' },
+  { word: 'moisture', chinese: '潮湿' },
+  { word: 'promote', chinese: '促进;提升' },
+  { word: 'region', chinese: '地区;范围;幅度' },
+  { word: 'register', chinese: '登记,注册' },
+  { word: 'stable', chinese: '稳定的' },
+  { word: 'sophisticated', chinese: '老于世故的,老练的;很复杂的' },
+  { word: 'splendid', chinese: '极好的,壮丽的,辉煌的' },
+  { word: 'cancel', chinese: '取消,废除' },
+  { word: 'variable', chinese: '易变的,可变的' },
+  { word: 'prospect', chinese: '前景,前途;景象' },
+  { word: 'prosperity', chinese: '兴旺,繁荣' },
+  { word: 'aspect', chinese: '方面;朝向;面貌' },
+  { word: 'cope', chinese: '(with)(成功地)应付,处理' },
+  { word: 'core', chinese: '果心,核心' },
+  { word: 'maintain', chinese: '维持,保持;坚持,主张' },
+  { word: 'mainland', chinese: '大陆' },
+  { word: 'discipline', chinese: '纪律;惩罚;学科' },
+  { word: 'domestic', chinese: '本国的,国内的;家用的;家庭的' },
+  { word: 'constant', chinese: '不变的,恒定的n.常数' },
+  { word: 'cliff', chinese: '悬崖,峭壁' },
+  { word: 'authority', chinese: '权威;当局' },
+  { word: 'audio', chinese: '听觉' },
+  { word: 'attitude', chinese: '态度' },
+  { word: 'community', chinese: '社区,社会' },
+  { word: 'commit', chinese: '犯(错误,罪行等),干(坏事等)' },
+  { word: 'comment', chinese: '评论' },
+  { word: 'distinguish', chinese: '区分,辨别' },
+  { word: 'distress', chinese: '痛苦,悲伤vt.使痛苦' },
+  { word: 'facility', chinese: '[pl.]设备,设施;便利,方便' },
+  { word: 'faculty', chinese: '能力,技能;系,学科,学院;全体教员' },
+  { word: 'mixture', chinese: '混合,混合物' },
+  { word: 'mood', chinese: '心情,情绪;语气' },
+  { word: 'moral', chinese: '道德上的,有道德的' },
+  { word: 'prominent', chinese: '突出的' },
+  { word: 'substance', chinese: '物质;实质' },
+  { word: 'substantial', chinese: '可观的;牢固的;实质的' },
+  { word: 'prompt', chinese: '促使a.敏捷的,及时的' },
+  { word: 'vivid', chinese: '生动的' },
+  { word: 'vocabulary', chinese: '词汇(量);词汇表' },
+  { word: 'venture', chinese: '风险投资,风险项目v.冒险;取于' },
+  { word: 'version', chinese: '版本,译本;说法' },
+  { word: 'waist', chinese: '腰,腰部' },
+  { word: 'weld', chinese: '焊接' },
+  { word: 'yawn', chinese: '打哈欠' },
+  { word: 'yield', chinese: '(to)屈服于;让出,放弃n.产量' },
+  { word: 'zone', chinese: '地区,区域' },
+  { word: 'strategy', chinese: '战略,策略' },
+  { word: 'strategic', chinese: '战略(上)的,关键的' },
+  { word: 'tense', chinese: '紧张的v.拉紧n.时态' },
+  { word: 'tension', chinese: '紧张(状态),张力' },
+  { word: 'avenue', chinese: '林荫道,大街' },
+  { word: 'available', chinese: '现成可用的;可得到的' },
+  { word: 'comparable', chinese:'(with,to)可比较的,类似的' },
+  { word: 'comparative', chinese: '比较的,相对的' },
+  { word: 'dash', chinese: '猛冲,飞奔' },
+  { word: 'data', chinese: '数据,资料' },
+  { word: 'dive', chinese: '跳水,潜水' },
+  { word: 'diverse', chinese: '不同的,多种多样的' },
+  { word: 'entitle', chinese: '给...权利,给...资格' },
+  { word: 'regulate', chinese: '管理,调节' },
+  { word: 'release', chinese: '释放,排放;解释解脱' },
+  { word: 'exaggerate', chinese: '夸大,夸张' },
+  { word: 'evil', chinese: '邪恶的,坏的' },
+  { word: 'shrink', chinese: '起皱,收缩;退缩' },
+  { word: 'subtract', chinese: '减(去)' },
+  { word: 'suburb', chinese: '市郊' },
+  { word: 'subway', chinese: '地铁' },
+  { word: 'survey', chinese: '调查,勘测' },
+  { word: 'wealthy', chinese: '富裕的' },
+  { word: 'adjust', chinese: '调整,调节' },
+  { word: 'attach', chinese: '系,贴;使附属' },
+  { word: 'profit', chinese: '利润,益处;v.有益于,有利于' },
+  { word: 'profitable', chinese: '有利可图的' },
+  { word: 'slope', chinese: '斜坡,斜面' },
+  { word: 'reinforce', chinese: '增强,加强' },
+  { word: 'reject', chinese: '拒绝' },
+  { word: 'fatal', chinese: '致命的;重大的' },
+  { word: 'fate', chinese: '命运' },
+  { word: 'humble', chinese: '谦逊的;谦虚的' },
+  { word: 'illegal', chinese: '不合法的,非法的' },
+  { word: 'award', chinese: '授予,判给n.奖品,奖金' },
+  { word: 'aware', chinese: '意识到' },
+  { word: 'column', chinese: '柱,圆柱;栏,专栏' },
+  { word: 'comedy', chinese: '喜剧' },
+  { word: 'dumb', chinese: '哑的;沉默的' },
+  { word: 'dump', chinese: '倾卸,倾倒' },
+  { word: 'deaf', chinese: '聋的;不愿听的' },
+  { word: 'decorate', chinese: '装饰,装璜' },
+  { word: 'principal', chinese: '最重要的n.负责人,校长' },
+  { word: 'principle', chinese: '原则,原理' },
+  { word: 'prior', chinese: '优先的,在前的' },
+  { word: 'priority', chinese: '优先,重点' },
+  { word: 'prohibit', chinese: '禁止,不准' },
+  { word: 'remarkable', chinese: '值得注意的,异常的,非凡的' },
+  { word: 'remedy', chinese: '补救,医治,治疗' },
+  { word: 'repetition', chinese: '重复,反复' },
+  { word: 'vain', chinese: '徒劳的,无效的' },
+  { word: 'undertake', chinese: '承担,着手做;同意,答应' },
+  { word: 'unique', chinese: '唯一的,独特的' },
+  { word: 'obstacle', chinese: '障碍(物),妨碍' },
+  { word: 'odd', chinese: '奇特的,古怪的;奇数的' },
+  { word: 'omit', chinese: '省略' },
+  { word: 'opponent', chinese: '敌手,对手' },
+  { word: 'opportunity', chinese: '机会,时机' },
+  { word: 'orchestra', chinese: '管弦乐队' },
+  { word: 'semester', chinese: '学期;半年' },
+  { word: 'semiconductor', chinese: '半导体' },
+  { word: 'seminar', chinese: '研讨会' },
+  { word: 'terminal', chinese: '末端的,极限的n.终点' },
+  { word: 'territory', chinese: '领土' },
+  { word: 'approximate', chinese: '大概的,大约v.近似' },
+  { word: 'arbitrary', chinese: '随意的,未断的' },
+  { word: 'architect', chinese: '建筑师' },
+  { word: 'architecture', chinese: '建筑学' },
+  { word: 'biology', chinese: '生物学' },
+  { word: 'geography', chinese: '地理(学)' },
+  { word: 'geology', chinese: '地质学' },
+  { word: 'geometry', chinese: '几何(学)' },
+  { word: 'arithmetic', chinese: '算术' },
+  { word: 'algebra', chinese: '代数' },
+  { word: 'entertainment', chinese: '娱乐;招待,款待' },
+  { word: 'enthusiasm', chinese: '热情,热心' },
+  { word: 'entry', chinese: '进入,入口处;参赛的人(或物)' },
+  { word: 'environment', chinese: '环境' },
+  { word: 'episode', chinese: '插曲,片段' },
+  { word: 'equation', chinese: '方程(式)' },
+  { word: 'restrain', chinese: '阻止,抑制' },
+  { word: 'restraint', chinese: '抑制,限制' },
+  { word: 'resume', chinese: '(中断后)重新开始' },
+  { word: 'severe', chinese: '严重的' },
+  { word: 'sexual', chinese: '性的' },
+  { word: 'simplicity', chinese: '简单;朴素' },
+  { word: 'simplify', chinese: '简化' },
+  { word: 'sorrow', chinese: '悲哀,悲痛' },
+  { word: 'stuff', chinese: '原料,材料vt.填进,塞满' },
+  { word: 'temporary', chinese: '暂时的,临时的' },
+  { word: 'temptation', chinese: '诱惑,引诱' },
+  { word: 'terror', chinese: '恐怖' },
+  { word: 'thrust', chinese: '挤,推,插' },
+  { word: 'treaty', chinese: '条约,协定' },
+  { word: 'arise', chinese: '产生,出现,发生;起身' },
+  { word: 'arouse', chinese: '引起,激起;唤醒' },
+  { word: 'burden', chinese: '重担,负荷' },
+  { word: 'bureau', chinese: '局,办事处' },
+  { word: 'marvelous', chinese: '奇迹般的,惊人的' },
+  { word: 'massive', chinese: '大的,大量的,大块的' },
+  { word: 'mature', chinese: '成熟的' },
+  { word: 'maximum', chinese: '最高的,最大的' },
+  { word: 'minimum', chinese: '最低的,最小的' },
+  { word: 'nonsense', chinese: '胡说,冒失的行动' },
+  { word: 'nuclear', chinese: '核子的,核能的' },
+  { word: 'nucleus', chinese: '核' },
+  { word: 'retail', chinese: '零售' },
+  { word: 'retain', chinese: '保留,保持' },
+  { word: 'restrict', chinese: '限制,约束' },
+  { word: 'sponsor', chinese: '发起者,主办者vt.发起,主办,资助' },
+  { word: 'spur', chinese: '刺激,激励' },
+  { word: 'triumph', chinese: '胜利,成功' },
+  { word: 'tuition', chinese: '学费' },
+  { word: 'twist', chinese: '使缠绕;转动;扭歪' },
+  { word: 'undergraduate', chinese: '大学肄业生' },
+  { word: 'universal', chinese: '普遍的,通用的;宇宙的' },
+  { word: 'universe', chinese: '宇宙' },
+  { word: 'via', chinese: '经由,经过,通过' },
+  { word: 'vibrate', chinese: '振动,摇摆' },
+  { word: 'virus', chinese: '病毒' },
+  { word: 'voluntary', chinese: '自愿的' },
+  { word: 'volunteer', chinese: '志愿者v.自愿(做)' },
+  { word: 'vote', chinese: '选举n.选票' },
+  { word: 'wagon', chinese: '四轮马车,铁路货车' },
+  { word: 'appoint', chinese: '任命,委派' },
+  { word: 'approach', chinese: '靠近,接近n.途径,方式' },
+  { word: 'appropriate', chinese: '适当的' },
+  { word: 'bunch', chinese: '群,伙;束,串' },
+  { word: 'bundle', chinese: '捆,包,束vt.收集,归拢' },
+  { word: 'ceremony', chinese: '典礼,仪式' },
+  { word: 'chaos', chinese: '混乱,紊乱' },
+  { word: 'discount', chinese: '(价格)折扣' },
+  { word: 'display', chinese: '陈列,展览' },
+  { word: 'equivalent', chinese:'相等的a.相等物' },
+  { word: 'erect', chinese: '竖直的v.建造,竖立' },
+  { word: 'fax', chinese: '传真' },
+  { word: 'fertile', chinese: '肥沃的;多产的' },
+  { word: 'fertilizer', chinese: '肥料' },
+  { word: 'grateful', chinese: '感激的' },
+  { word: 'gratitude', chinese: '感激' },
+  { word: 'horror', chinese: '恐怖' },
+  { word: 'horrible', chinese: '可怕的' },
+  { word: 'Internet', chinese: '国际互联网,因特网' },
+  { word: 'interpret', chinese: '翻译,解释' },
+  { word: 'interpretation', chinese: '解释,说明' },
+  { word: 'jungle', chinese: '丛林,密林' },
+  { word: 'knot', chinese: '结vt.把...打成结' },
+  { word: 'leak', chinese: '漏,渗出' },
+  { word: 'lean', chinese: '倾斜,倚,靠' },
+  { word: 'leap', chinese: '跳跃' },
+  { word: 'modify', chinese: '修改' },
+  { word: 'nylon', chinese: '尼龙' },
+  { word: 'onion', chinese: '洋葱' },
+  { word: 'powder', chinese: '粉末' },
+  { word: 'applicable', chinese: '可应用的,适当的' },
+  { word: 'applicant', chinese: '申请人' },
+  { word: 'breadth', chinese: '宽度' },
+  { word: 'conservation', chinese: '保存,保护' },
+  { word: 'conservative', chinese: '保守的' },
+  { word: 'parallel', chinese: '平行线;可相比拟的事物' },
+  { word: 'passion', chinese: '激情,热情' },
+  { word: 'passive', chinese: '被动的,消极的' },
+  { word: 'pat', chinese: '轻拍,轻打' },
+  { word: 'peak', chinese: '山峰,顶点' },
+  { word: 'phenomenon', chinese: '现象' },
+  { word: 'reluctant', chinese: '不情愿的,勉强的' },
+  { word: 'rely', chinese: '(on,upon)依赖,指望' },
+  { word: 'relevant', chinese: '有关的,切题的' },
+  { word: 'reliable', chinese: '可靠的' },
+  { word: 'relief', chinese: '轻松,宽慰;减轻' },
+  { word: 'reputation', chinese: '名气,声誉' },
+  { word: 'rescue', chinese: '营救' },
+  { word: 'triangle', chinese: '三角(形)' },
+  { word: 'sequence', chinese: '连续;顺序' },
+  { word: 'shallow', chinese: '浅的' },
+  { word: 'shiver', chinese: '发抖' },
+  { word: 'shrug', chinese: '耸肩' },
+  { word: 'signature', chinese: '签名' },
+  { word: 'sincere', chinese: '诚挚的,真诚的' },
+  { word: 'utility', chinese: '功用,效用' },
+  { word: 'utilize', chinese: '利用' },
+  { word: 'utter', chinese: '说出a.完全的,彻底的' },
+  { word: 'variation', chinese: '变化,变动' },
+  { word: 'vehicle', chinese: '交通工具,车辆' },
+  { word: 'applause', chinese: '鼓掌,掌声' },
+  { word: 'appliance', chinese: '器具,器械' },
+  { word: 'consent', chinese: '准许,同意vi(to)准许,同意' },
+  { word: 'conquer', chinese: '征服' },
+  { word: 'defect', chinese: '缺点,缺陷' },
+  { word: 'delicate', chinese: '易碎的;娇弱的;精美的' },
+  { word: 'evolve', chinese: '演变' },
+  { word: 'evolution', chinese: '演变,进化' },
+  { word: 'frown', chinese: '皱眉' },
+  { word: 'frustrate', chinese: '使沮丧' },
+  { word: 'guarantee', chinese: '保证' },
+  { word: 'guilty', chinese: '内疚的;有罪的' },
+  { word: 'jealous', chinese: '妒忌的' },
+  { word: 'jeans', chinese: '牛仔裤' },
+  { word: 'liquor', chinese: '酒,烈性酒' },
+  { word: 'liter/litre', chinese: '升' },
+  { word: 'modest', chinese: '谦虚的' },
+  { word: 'molecule', chinese: '分子' },
+  { word: 'orbit', chinese: '轨道v.(绕...)作轨道运行' },
+  { word: 'participate', chinese: '(in)参与,参加' },
+  { word: 'particle', chinese: '微粒' },
+  { word: 'particularly', chinese: '特别,尤其' },
+  { word: 'respond', chinese: '回答,答复;反应' },
+  { word: 'response', chinese: '回答,答复;反应' },
+  { word: 'sensible', chinese: '明智的' },
+  { word: 'sensitive', chinese: '敏感的,灵敏的' },
+  { word: 'tremble', chinese: '颤抖' },
+  { word: 'tremendous', chinese: '巨大的;精彩的' },
+  { word: 'trend', chinese: '趋向,倾向' },
+  { word: 'trial', chinese: '审讯;试验' },
+  { word: 'apparent', chinese: '显然的,明白的' },
+  { word: 'appetite', chinese: '胃口;欲望' },
+  { word: 'deposit', chinese: '存款,定金v.存放,储蓄' },
+  { word: 'deputy', chinese: '副职,代表' },
+  { word: 'derive', chinese: '取得,得到;(from)起源于' },
+  { word: 'descend', chinese: '下来,下降' },
+  { word: 'missile', chinese: '导弹' },
+  { word: 'mission', chinese: '使命;代表团' },
+  { word: 'mist', chinese: '薄雾' },
+  { word: 'noticeable', chinese: '显而易见的' },
+  { word: 'notify', chinese: '通知,告知' },
+  { word: 'notion', chinese: '概念;意图,想法' },
+  { word: 'resemble', chinese: '像,类似于' },
+  { word: 'reveal', chinese: '揭露' },
+  { word: 'revenue', chinese: '收入,岁入;税收' },
+  { word: 'shelter', chinese: '掩蔽处;住所' },
+  { word: 'shield', chinese: '防护物,盾vt.保护,防护' },
+  { word: 'vital', chinese: '重要的;致命的,生命的' },
+  { word: 'vitally', chinese: '极度,非常;致命地' },
+  { word: 'urban', chinese: '城市的' },
+  { word: 'urge', chinese: '鼓励,激励' },
+  { word: 'urgent', chinese: '急迫的,紧急的' },
+  { word: 'usage', chinese: '使用,用法' },
+  { word: 'violence', chinese: '强力,暴力' },
+  { word: 'violent', chinese: '强暴的' },
+  { word: 'violet', chinese: '紫色的' },
+  { word: 'weed', chinese: '杂草,野草' },
+  { word: 'welfare', chinese: '福利' },
+  { word: 'whatsoever', chinese: '(用于否定句)任何' },
+  { word: 'whereas', chinese: '然而,但是,尽管' },
+  { word: 'essential', chinese: '必不可少的;本质的' },
+  { word: 'estimate', chinese: '估计,估量' },
+  { word: 'evaluate', chinese: '评估,评价' },
+  { word: 'exceed', chinese: '超过,越出' },
+  { word: 'exceedingly', chinese: '非常,极其' },
+  { word: 'exclaim', chinese: '呼喊,大声说' },
+  { word: 'exclude', chinese: '把...排斥在外,不包括' },
+  { word: 'exclusive', chinese: '独有的,排他的' },
+  { word: 'excursion', chinese: '远足' },
+  { word: 'flash', chinese: '闪光,闪耀' },
+  { word: 'flee', chinese: '逃走' },
+  { word: 'flexible', chinese: '易弯曲的' },
+  { word: 'flock', chinese: '羊群,(鸟兽等)一群;一伙人' },
+  { word: 'hardware', chinese: '五金器具' },
+  { word: 'harmony', chinese: '和谐,融洽' },
+  { word: 'haste', chinese: '急速,急忙' },
+  { word: 'hatred', chinese: '憎恶,憎恨' },
+  { word: 'incident', chinese: '事件,事变' },
+  { word: 'index', chinese: '索引,标志' },
+  { word: 'infant', chinese: '婴儿' },
+  { word: 'infect', chinese: '传染' },
+  { word: 'inferior', chinese: '劣等的,次的,下级的' },
+  { word: 'infinite', chinese: '无限的' },
+  { word: 'ingredient', chinese: '组成部分' },
+  { word: 'inhabitant', chinese: '居民' },
+  { word: 'jail', chinese: '监狱' },
+  { word: 'jam', chinese: '果酱;拥挤,堵塞' },
+  { word: 'jewel', chinese: '宝石' },
+  { word: 'joint', chinese: '连接的;共同的' },
+  { word: 'junior', chinese: '年少的;资历较浅的' },
+  { word: 'laser', chinese: '激光' },
+  { word: 'launch', chinese: '发动,发起' },
+  { word: 'luxury', chinese: '奢侈;奢侈品' },
+  { word: 'magnet', chinese: '磁铁,磁体' },
+  { word: 'male', chinese: '男性的,雄的' },
+  { word: 'female', chinese: '女性的,雌的' },
+  { word: 'manual', chinese: '用手的,手工做的n.手册' },
+  { word: 'manufacture', chinese: '制造,加工' },
+  { word: 'marine', chinese: '海的;海产的' },
+  { word: 'mutual', chinese: '相互的' },
+  { word: 'naked', chinese: '裸露的' },
+  { word: 'negative', chinese: '否定的,消极的' },
+  { word: 'neglect', chinese: '忽视,忽略' },
+  { word: 'origin', chinese: '起源,出身' },
+  { word: 'oval', chinese: '椭圆形的n.椭圆形' },
+  { word: 'outset', chinese: '开始,开端' },
+  { word: 'presumably', chinese: '大概,可能' },
+  { word: 'prevail', chinese: '流行,盛行' },
+  { word: 'quit', chinese: '停止' },
+  { word: 'quotation', chinese: '引文,引语' },
+  { word: 'recreation', chinese: '娱乐活动' },
+  { word: 'recruit', chinese: '招募,吸收(新成员)' },
+  { word: 'rival', chinese: '竞争对手,敌手' },
+  { word: 'shuttle', chinese: '梭子;航天飞机' },
+  { word: 'skim', chinese: '撇(去),掠过;浏览' },
+  { word: 'sketch', chinese: '草图;梗概' },
+  { word: 'slender', chinese: '苗条的,修长的' },
+  { word: 'theme', chinese: '主题' },
+  { word: 'textile', chinese: '纺织品' },
+  { word: 'tropical', chinese: '热带的,炎热的' },
+  { word: 'kneel', chinese: '跪' },
+  { word: 'label', chinese: '标签' },
+  { word: 'merchant', chinese: '商人' },
+  { word: 'mere', chinese: '仅仅的,只不过的;纯粹的' },
+  { word: 'nuisance', chinese: '令人讨厌的东西(或人)' },
+  { word: 'numerous', chinese: '众多的,许多的' },
+  { word: 'parade', chinese: '游行v.列队行进' },
+  { word: 'pants', chinese: '长裤;内裤' },
+  { word: 'partial', chinese: '部分的' },
+  { word: 'passport', chinese: '护照' },
+  { word: 'prescribe', chinese: '开药,吩咐采用...疗法' },
+  { word: 'primitive', chinese: '原始的,早期的' },
+  { word: 'ridge', chinese: '脊,山脊,埂' },
+  { word: 'ridiculous', chinese: '可笑的,荒谬的' },
+  { word: 'rigid', chinese: '严格的;僵硬的' },
+  { word: 'withstand', chinese: '经受,承受' },
+  { word: 'witness', chinese: '目击者;证据vt.注意到;证明' },
+  { word: 'withdraw', chinese: '收回,撤销' },
+  { word: 'slippery', chinese: '滑的' },
+  { word: 'smash', chinese: '粉碎,打烂' },
+  { word: 'snap', chinese: '折断,拉断;快照' },
+  { word: 'software', chinese: '软件' },
+  { word: 'solar', chinese: '太阳的' },
+  { word: 'lunar', chinese: '月的,月球的' },
+  { word: 'submerge', chinese: '潜入水中' },
+  { word: 'submit', chinese: '(to)屈服,听从' },
+  { word: 'timber', chinese: '木材,原木' },
+  { word: 'tissue', chinese: '组织;薄纱,手巾纸' },
+  { word: 'title', chinese: '题目,标题' },
+  { word: 'tone', chinese: '语气,音调' },
+  { word: 'drift', chinese: '漂,漂流' },
+  { word: 'drip', chinese: '滴' },
+  { word: 'durable', chinese: '耐用的,持久的' },
+  { word: 'duration', chinese: '持续,持续期间' },
+  { word: 'dusk', chinese: '黄昏,薄暮' },
+  { word: 'leather', chinese: '皮革' },
+  { word: 'legislation', chinese: '法律,法规;立法' },
+  { word: 'leisure', chinese: '闲暇;悠闲' },
+  { word: 'loose', chinese: '松的,宽松的' },
+  { word: 'loosen', chinese: '解开,放松' },
+  { word: 'earnest', chinese: '认真的,诚挚的' },
+  { word: 'earthquake', chinese: '地震' },
+  { word: 'echo', chinese: '回音,回声' },
+  { word: 'elaborate', chinese: '精心设计的,复杂的' },
+  { word: 'elastic', chinese: '橡皮圈(带)a.有弹性的' },
+  { word: 'elbow', chinese: '肘' },
+  { word: 'electron', chinese: '电子' },
+  { word: 'volcano', chinese: '火山' },
+  { word: 'volume', chinese: '卷,册;体积,容量' },
+  { word: 'fatigue', chinese: '疲劳,劳累' },
+  { word: 'faulty', chinese: '有错误的,有缺点的' },
+  { word: 'favorable', chinese: '称赞的;有利的,顺利的' },
+  { word: 'favorite', chinese: '特别受喜欢的n.喜爱的人或物' },
+  { word: 'gallery', chinese: '画廊' },
+  { word: 'gallon', chinese: '加仑' },
+  { word: 'gap', chinese: '间隔,差距' },
+  { word: 'garbage', chinese: '垃圾,废物' },
+  { word: 'gaze', chinese: '凝视,注视' },
+  { word: 'gear', chinese: '齿轮,传动装置' },
+  { word: 'gene', chinese: '基因' },
+  { word: 'lest', chinese: '唯恐,免得' },
+  { word: 'liable', chinese: '可能的,大概的;(to)易于...的' },
+  { word: 'liberal', chinese: '自由的' },
+  { word: 'liberty', chinese: '自由' },
+  { word: 'licence/license', chinese: '许可证,执照' },
+  { word: 'moisture', chinese: '潮湿' },
+  { word: 'motivate', chinese: '激励,激发' },
+  { word: 'motive', chinese: '动机,目的' },
+  { word: 'generate', chinese: '生成,产生(光、热、电等)' },
+  { word: 'genius', chinese: '天才,天赋' },
+  { word: 'genuine', chinese: '真的,真诚的' },
+  { word: 'gasoline', chinese: '汽油' },
+  { word: 'germ', chinese: '微生物,细菌' },
+  { word: 'gesture', chinese: '姿势,手势' },
+  { word: 'giant', chinese: '巨大的n.巨人,巨物' },
+  { word: 'glimpse', chinese: '一瞥,一看' },
+  { word: 'glory', chinese: '光荣,荣誉' },
+  { word: 'glorious', chinese: '光荣的,极好的' },
+  { word: 'golf', chinese: '高尔夫球运动' },
+  { word: 'hydrogen', chinese: '氢' },
+  { word: 'oxygen', chinese: '氧' },
+  { word: 'hostile', chinese: '敌对的,敌意大' },
+  { word: 'household', chinese: '家庭,户' },
+  { word: 'hook', chinese: '钩' },
+  { word: 'holy', chinese: '神圣的,圣洁的' },
+  { word: 'hint', chinese: '暗示,示意' },
+  { word: 'hesitate', chinese: '犹豫' }
+];
+
+        let currentMode = 'wordToChinese'; // 当前练习模式
+        let currentQuestion = null;
+    let currentAppMode = 'practice'; // 'practice'常规练习 'review'复习模式
+        let score = 0;
+        let errorBook = JSON.parse(localStorage.getItem('cet4ErrorBook')) || [];
+        let consecutiveCorrect = 0; // 连续答对次数
+        let stars = []; // 存储当前星星元素（最多30个）
+
+        // 初始化页面
+        function init() {
+            generateQuestion();
+            updateErrorBookDisplay();
+        }
+
+        // 生成题目
+        function generateQuestion() {
+        // 复习模式时仅选取已学习单词
+        const sourceWords = currentAppMode === 'review'
+            ? vocabData.filter(item => learnedWords.has(item.word))
+            : vocabData;
+        if (sourceWords.length === 0) {
+            alert(currentAppMode === 'review' ? '暂无已学习单词，请先练习！' : '无可用题目！');
+            return;
+        }
+            const allWords = [...sourceWords]; // 使用过滤后的单词源
+            const correctWord = allWords[Math.floor(Math.random() * allWords.length)];
+            
+            // 生成四个选项（包含正确选项）
+            const options = [correctWord];
+            while (options.length < 4) {
+                const randomWord = allWords[Math.floor(Math.random() * allWords.length)];
+                if (!options.some(opt => opt.word === randomWord.word)) {
+                    options.push(randomWord);
+                }
+            }
+            options.sort(() => Math.random() - 0.5);
+
+            currentQuestion = {
+                type: currentMode,
+                correct: correctWord,
+                options: options
+            };
+
+            displayQuestion();
+        }
+
+        // 显示题目
+        function displayQuestion() {
+            const questionEl = document.getElementById('question');
+            const optionsEl = document.getElementById('options');
+            optionsEl.innerHTML = '';
+
+            if (currentMode === 'wordToChinese') {
+                questionEl.textContent = `选出 [${currentQuestion.correct.word}] 的正确中文意思：`;
+            } else {
+                questionEl.textContent = `选出 [${currentQuestion.correct.chinese}] 对应的英文单词：`;
+            }
+
+            currentQuestion.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = currentMode === 'wordToChinese' ? opt.chinese : opt.word;
+                btn.onclick = () => checkAnswer(opt);
+                optionsEl.appendChild(btn);
+            });
+        }
+
+        // 检查答案
+        function checkAnswer(selected) {
+            const feedbackEl = document.getElementById('feedback');
+            const isCorrect = selected.word === currentQuestion.correct.word;
+            const optionsBtns = document.getElementsByClassName('option-btn');
+
+            // 禁用选项按钮
+            Array.from(optionsBtns).forEach(btn => btn.disabled = true);
+
+            if (isCorrect) {
+                    score += 10;
+                    feedbackEl.textContent = '答对了！太棒了~';
+                    feedbackEl.className = 'feedback correct';
+                    document.getElementById('feedback').classList.add('celebrate');
+                    // 记录已学习单词
+                if (!learnedWords.has(currentQuestion.correct.word)) {
+                    learnedWords.add(currentQuestion.correct.word);
+                    saveLearningProgress(); // 保存学习进度
+                }
+                // 处理连续答对星星动画
+                consecutiveCorrect++;
+                createStar();
+                // 连续5次答对触发发光
+                if (consecutiveCorrect % 5 === 0) {
+                    stars.forEach(star => star.classList.add('star-glow'));
+                    setTimeout(() => stars.forEach(star => star.classList.remove('star-glow')), 800);
+                }
+                    // 处理错题本（如果是错题本中的题目）
+                    if (currentMode === 'errorPractice') {
+                        const errorIndex = errorBook.findIndex(item => item.word === selected.word);
+                        if (errorIndex !== -1) {
+                            errorBook[errorIndex].correctCount++;
+                            if (errorBook[errorIndex].correctCount >= 3) {
+                                errorBook.splice(errorIndex, 1);
+                            }
+                            saveErrorBook();
+                        }
+                    }
+                } else {
+                    feedbackEl.textContent = `答错了！正确答案是：${currentQuestion.correct[currentMode === 'wordToChinese' ? 'chinese' : 'word']}`;
+                    feedbackEl.className = 'feedback wrong';
+                    document.getElementById('feedback').classList.add('shake');
+                    // 答错时重置连续答对并移除所有星星
+                    consecutiveCorrect = 0;
+                    removeAllStars();
+                    // 记录错题（错词数已通过errorBook的errorCount显示）
+                    const existingError = errorBook.find(item => item.word === currentQuestion.correct.word);
+                    if (!existingError) {
+                        errorBook.push({
+                            word: currentQuestion.correct.word,
+                            chinese: currentQuestion.correct.chinese,
+                            correctCount: 0,
+                            errorCount: 1
+                        });
+                    } else {
+                        existingError.errorCount++;
+                    }
+                    saveErrorBook();
+                }
+                // 更新学习进度显示
+                updateLearningProgress();
+
+            feedbackEl.style.display = 'block';
+            document.getElementById('stats').textContent = `当前得分：${score}`;
+
+            // 3秒后重置题目
+            setTimeout(() => {
+                feedbackEl.style.display = 'none';
+                document.getElementById('feedback').classList.remove('celebrate', 'shake');
+                Array.from(optionsBtns).forEach(btn => btn.disabled = false);
+                if (currentMode === 'errorPractice') {
+                    generateErrorQuestion();
+                } else {
+                    generateQuestion();
+                }
+            }, 2000);
+
+            // 创建随机位置星星（避开主要界面区域）
+            function createStar() {
+                if (stars.length >= 30) {
+                    const oldStar = stars.shift();
+                    oldStar.remove();
+                }
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.textContent = '⭐';
+                // 获取主要容器位置（练习区域和错题本）
+                const practiceSection = document.getElementById('practiceSection');
+                const errorBookSection = document.getElementById('errorBookSection');
+                const practiceRect = practiceSection.getBoundingClientRect();
+                const errorRect = errorBookSection.getBoundingClientRect();
+                // 计算安全区域偏移量（避开容器边缘10px）
+                const offset = 10;
+                let x, y;
+                do {
+                    x = Math.random() * (window.innerWidth - 40);
+                    y = Math.random() * (window.innerHeight - 40);
+                } while (
+                    // 避开练习区域（扩展10px边缘）
+                    (x > practiceRect.left - offset && x < practiceRect.right + offset && y > practiceRect.top - offset && y < practiceRect.bottom + offset) ||
+                    // 避开错题本区域（仅当错题本显示时）
+                    (errorBookSection.offsetParent !== null && x > errorRect.left - offset && x < errorRect.right + offset && y > errorRect.top - offset && y < errorRect.bottom + offset)
+                );
+                // 确保位置在窗口可视范围内
+                x = Math.max(0, Math.min(x, window.innerWidth - 40));
+                y = Math.max(0, Math.min(y, window.innerHeight - 40));
+                star.style.left = `${x}px`;
+                star.style.top = `${y}px`;
+                document.body.appendChild(star);
+                stars.push(star);
+                // 动画结束后移除元素（仅下落动画结束时移除）
+                star.addEventListener('animationend', (e) => {
+                    if (e.animationName === 'starFall') {
+                        star.remove();
+                        stars = stars.filter(s => s !== star);
+                    }
+                });
+            }
+
+            // 移除所有星星
+            function removeAllStars() {
+                stars.forEach(star => {
+                    star.classList.add('star-fall');
+                    star.addEventListener('animationend', () => {
+                        star.remove();
+                    });
+                });
+                stars = [];
+            }
+        }
+
+        // 切换练习模式
+        document.getElementById('practiceBtn').addEventListener('click', () => {
+            currentMode = 'wordToChinese';
+            document.getElementById('practiceSection').style.display = 'block';
+            document.getElementById('errorBookSection').style.display = 'none';
+            document.querySelector('.nav .active').classList.remove('active');
+            this.classList.add('active');
+            generateQuestion();
+        });
+
+        // 显示错题本
+        document.getElementById('errorBookBtn').addEventListener('click', () => {
+            currentMode = 'errorPractice';
+            document.getElementById('practiceSection').style.display = 'block';
+            document.getElementById('errorBookSection').style.display = 'block';
+            document.querySelector('.nav .active').classList.remove('active');
+            this.classList.add('active');
+            generateErrorQuestion();
+            updateErrorBookDisplay();
+        });
+
+        // 生成错题题目
+        function generateErrorQuestion() {
+            if (errorBook.length === 0) {
+                document.getElementById('question').textContent = '错题本为空！继续练习积累错题吧~';
+                document.getElementById('options').innerHTML = '';
+                return;
+            }
+            const correctWord = errorBook[Math.floor(Math.random() * errorBook.length)];
+            const options = [correctWord];
+            
+            while (options.length < 4) {
+                const randomWord = vocabData[Math.floor(Math.random() * vocabData.length)];
+                if (!options.some(opt => opt.word === randomWord.word)) {
+                    options.push({
+                        word: randomWord.word,
+                        chinese: randomWord.chinese
+                    });
+                }
+            }
+            options.sort(() => Math.random() - 0.5);
+
+            currentQuestion = {
+                type: 'chineseToWord',
+                correct: correctWord,
+                options: options
+            };
+
+            displayQuestion();
+        }
+
+        // 更新错题本显示
+        function updateErrorBookDisplay() {
+            // 通过 document.getElementById 方法获取页面上 id 为 'errorList' 的元素，该元素用于显示错题列表
+            const errorList = document.getElementById('errorList');
+            // 将 errorList 元素的 innerHTML 属性设置为空字符串，即清空当前显示的所有错题项
+            errorList.innerHTML = '';
+            // 遍历 errorBook 数组，该数组包含了所有的错题信息
+            errorBook.forEach((item, index) => {
+                // 创建一个新的 div 元素，用于表示单个错题项
+                const div = document.createElement('div');
+                // 为新创建的 div 元素设置类名 'error-item'，以便应用相应的 CSS 样式
+                div.className = 'error-item';
+                // 为新创建的 div 元素设置内部 HTML 内容，包含错题的单词、中文释义、错误次数和正确次数，以及一个删除按钮
+                div.innerHTML = `
+                    <div>
+                        <p>${item.word} - ${item.chinese}</p>
+                        <small>错误次数：${item.errorCount} | 正确次数：${item.correctCount}</small>
+                    </div>
+                    <button class="error-delete-btn">-</button>
+                `;
+
+                // 绑定删除按钮点击事件
+                // 使用 div.querySelector 方法获取新创建的 div 元素内类名为 'error-delete-btn' 的按钮元素
+                // 为该按钮元素添加点击事件监听器
+                div.querySelector('.error-delete-btn').addEventListener('click', () => {
+                    // 当点击删除按钮时，使用 filter 方法过滤掉 errorBook 数组中单词与当前错题项单词相同的元素
+                    // 从而实现删除当前错题项的功能
+                    errorBook = errorBook.filter(eb => eb.word !== item.word);
+                    // 调用 saveErrorBook 函数，将更新后的错题本信息保存到本地存储，并重新更新错题本的显示内容
+                    saveErrorBook(); // 保存并更新显示
+                });
+                // 将新创建的错题项 div 元素添加到 errorList 元素中，使其显示在页面上
+                errorList.appendChild(div);
+            });
+        }
+
+        // 保存错题本到本地存储
+        function saveErrorBook() {
+            localStorage.setItem('cet4ErrorBook', JSON.stringify(errorBook));
+            updateErrorBookDisplay();
+        }
+
+        // 初始化学习进度（读取localStorage）
+        let learnedWords = new Set(JSON.parse(localStorage.getItem('learnedWords')) || []);
+        const totalWords = vocabData.length;
+
+        // 更新学习进度显示
+        const updateLearningProgress = () => {
+            document.getElementById('learningProgress').textContent = `已学习：${learnedWords.size}/${totalWords}`;
+        };
+
+        // 保存学习进度到localStorage
+        const saveLearningProgress = () => {
+            localStorage.setItem('learnedWords', JSON.stringify(Array.from(learnedWords)));
+        };
+
+        // 初始加载
+        init();
+        updateLearningProgress();
+    </script>
