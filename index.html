@@ -91,6 +91,7 @@
             max-width: 600px; /* 最大宽度限制 */
             margin: 0 auto; /* 水平居中 */
             position: relative; /* 为内部元素提供定位上下文 */
+            border: 2px solid var(--border-color);
         }
 
         .question {
@@ -157,10 +158,10 @@
         }
 
         .error-book {
-            display: none;
+            display: none; /* 初始隐藏 */
             margin-top: 20px;
             position: fixed; /* 固定定位在右侧 */
-            right: 20px; /* 距离右侧20px */
+            right: 20px; /* 初始右侧距离 */
             top: 100px; /* 距离顶部100px */
             width: 300px; /* 调整为更适合查看的宽度 */
             max-height: 80vh; /* 最大高度为视口80% */
@@ -170,6 +171,55 @@
             border-radius: 15px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             z-index: 100; /* 确保在最上层 */
+            transition: right 0.3s ease-in-out; /* 右侧位置动画 */
+        }
+
+        .position-toggle-btn {
+            position: fixed;
+            top: 50%; /* 垂直居中 */
+            right: 320px; /* 初始在错题本左侧10px */
+            width: 24px;
+            height: 48px;
+            background: #3498db; /* 默认模式颜色 */
+            color: white;
+            border-radius: 8px 0 0 8px; /* 左侧圆角 */
+            display: none; /* 初始隐藏 */
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 101; /* 高于错题本 */
+            transition: right 0.3s ease-in-out; /* 跟随错题本移动动画 */
+            transform: translateY(-50%); /* 垂直居中偏移 */
+        }
+
+        .dark-mode .position-toggle-btn {
+            background: #2d3748; /* 深色模式使用错题本同色系 */
+        }
+
+        .position-toggle-btn {
+            position: fixed;
+            top: 50%; /* 垂直居中 */
+            right: 320px; /* 初始在错题本左侧10px */
+            width: 24px;
+            height: 48px;
+            background: #3498db;
+            color: white;
+            border-radius: 8px 0 0 8px; /* 左侧圆角 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 101; /* 高于错题本 */
+            transition: right 0.3s ease-in-out; /* 跟随错题本移动动画 */
+            transform: translateY(-50%); /* 垂直居中偏移 */
+        }
+
+        .error-book.hidden {
+            right: -320px; /* 隐藏到右侧外 */
+        }
+
+        .position-toggle-btn.hidden {
+            right: 20px; /* 隐藏时按钮显示在右侧边缘 */
         }
         /* 自定义滚动条样式 */
         .error-book::-webkit-scrollbar {
@@ -313,11 +363,13 @@
         :root {
             --bg-color: #ffffff;
             --text-color: #2c3e50;
+            --border-color: #bdc3c7;
         }
         /* 深色模式覆盖 */
         .dark-mode {
             --bg-color: #1f2732;
             --text-color: #e0e0e0;
+            --border-color: #4a5568;
         }
         /* 深色模式下容器样式调整 */
         .dark-mode .container {
@@ -370,44 +422,72 @@
     </div>
 
     <!-- 错题本区域，类名为 error-book，初始状态为隐藏，通过 id "errorBookSection" 可在 JavaScript 中操作该元素 -->
-    <div class="error-book" id="errorBookSection">
-        <!-- 错题本标题 -->
-        <h3>错题本（答对3次移除）</h3>
-        <!-- 用于显示错题列表的 div，通过 id "errorList" 可在 JavaScript 中动态添加错题项 -->
-        <div id="errorList"></div>
-    </div>
+    <!-- 错题本位置切换按钮 -->
+        <div class="position-toggle-btn" id="positionToggleBtn">⟨</div>
+
+        <div class="error-book" id="errorBookSection">
+            <!-- 错题本标题 -->
+            <h3>错题本（答对3次移除）</h3>
+            <!-- 用于显示错题列表的 div，通过 id "errorList" 可在 JavaScript 中动态添加错题项 -->
+            <div id="errorList"></div>
+        </div>
 </div>
 
     <script>
         // 需要避开的元素选择器（"四级词汇小站"标题、错题本标题、导航按钮）
-        const avoidSelectors = ['.header h1', '.error-book h3', '.nav button:not(#modeBtn)', '.option-btn', '.question', '.feedback', '.stats', '.learning-progress']; // 扩展避开区域：问题区、反馈区、统计区、进度区
+        const avoidSelectors = ['.header h1', '.error-book h3', '.nav button:not(#modeBtn)', '.option-btn', '.question', '.feedback', '.stats', '.learning-progress', '.container']; // 扩展避开区域：新增答题容器（含边框）
 
         // 获取需要避开的区域（带边距）
-        function getAvoidRegions(margin = 30) {
+        function getAvoidRegions(margin = 80) {
             return avoidSelectors.map(selector => {
                 const el = document.querySelector(selector);
-                if (!el) return null;
+                if (!el || el.offsetParent === null || getComputedStyle(el).display === 'none' || getComputedStyle(el).visibility === 'hidden' || parseFloat(getComputedStyle(el).opacity) < 0.1) {
+                    return null;
+                }
                 const rect = el.getBoundingClientRect();
-                return {
-                    left: rect.left - margin,
-                    top: rect.top - margin,
-                    right: rect.right + margin,
-                    bottom: rect.bottom + margin
+                // 获取文档滚动偏移量
+                const scrollX = window.scrollX || window.pageXOffset;
+                const scrollY = window.scrollY || window.pageYOffset;
+                // 转换为文档绝对坐标
+                const docLeft = rect.left + scrollX;
+                const docTop = rect.top + scrollY;
+                const styles = getComputedStyle(el);
+            const borderLeft = parseFloat(styles.borderLeftWidth) || 0;
+            const borderTop = parseFloat(styles.borderTopWidth) || 0;
+            const borderRight = parseFloat(styles.borderRightWidth) || 0;
+            const borderBottom = parseFloat(styles.borderBottomWidth) || 0;
+            // 获取元素内边距
+            const paddingLeft = parseFloat(styles.paddingLeft) || 0;
+            const paddingTop = parseFloat(styles.paddingTop) || 0;
+            const paddingRight = parseFloat(styles.paddingRight) || 0;
+            const paddingBottom = parseFloat(styles.paddingBottom) || 0;
+            return {
+                // 扩大边距至60px以覆盖中间答题区域
+                left: docLeft - margin,
+                top: docTop - margin,
+                right: docLeft + rect.width + margin,
+                bottom: docTop + rect.height + margin
                 };
             }).filter(Boolean);
         }
 
         // 生成安全的星星位置（避开目标区域）
         function getSafeStarPosition() {
-            const regions = getAvoidRegions();
+            const avoidRegions = getAvoidRegions(80); // 获取所有需要避开的区域（含80px边距）
             let x, y;
+            const scrollX = window.scrollX || window.pageXOffset;
+            const scrollY = window.scrollY || window.pageYOffset;
             do {
                 x = Math.random() * window.innerWidth;
                 y = Math.random() * window.innerHeight;
-            } while (regions.some(region => {
-                return x >= region.left && x <= region.right &&
-                       y >= region.top && y <= region.bottom;
-            }));
+                // 将视口坐标转换为文档绝对坐标
+                const docX = x + scrollX;
+                const docY = y + scrollY;
+                // 检查文档绝对坐标是否落在任意避开区域内
+                const isInAvoidRegion = avoidRegions.some(region => {
+                    return docX >= region.left && docX <= region.right && docY >= region.top && docY <= region.bottom;
+                });
+            } while (isInAvoidRegion); // 直到找到不在避开区域的位置
             return { x, y };
         }
 
@@ -443,12 +523,25 @@ const toggleTheme = () => {
 
 document.getElementById('modeBtn').addEventListener('click', toggleTheme); // 绑定点击事件
 
+        // 绑定错题本按钮点击事件
+        document.getElementById('errorBookBtn').addEventListener('click', () => {
+            currentAppMode = 'errorBook';
+            document.querySelector('.nav button.active').classList.remove('active');
+            document.getElementById('errorBookBtn').classList.add('active');
+            // 显示错题本及按钮
+            document.getElementById('errorBookSection').style.display = 'block';
+            document.getElementById('positionToggleBtn').style.display = 'flex';
+        });
+
         // 绑定复习模式按钮点击事件
         document.getElementById('reviewBtn').addEventListener('click', () => {
             currentAppMode = 'review';
             document.querySelector('.nav button.active').classList.remove('active');
             document.getElementById('reviewBtn').classList.add('active');
             generateQuestion();
+            // 隐藏错题本及按钮
+            document.getElementById('errorBookSection').style.display = 'none';
+            document.getElementById('positionToggleBtn').style.display = 'none';
         });
 
         // 绑定常规练习按钮点击事件（覆盖原有active状态）
@@ -457,7 +550,76 @@ document.getElementById('modeBtn').addEventListener('click', toggleTheme); // �
             document.querySelector('.nav button.active').classList.remove('active');
             document.getElementById('practiceBtn').classList.add('active');
             generateQuestion();
+            // 隐藏错题本及按钮
+            document.getElementById('errorBookSection').style.display = 'none';
+            document.getElementById('positionToggleBtn').style.display = 'none';
         });
+
+        // 键盘控制变量
+        let currentSelected = 0; // 当前选中的选项索引
+        const optionButtons = document.getElementById('options');
+
+        // 处理键盘事件
+        function handleKeyPress(e) {
+            const options = document.querySelectorAll('.option-btn');
+            if (options.length === 0) return;
+
+            // 恢复所有选项样式
+            options.forEach(btn => btn.style.borderColor = '');
+
+            // 处理方向键/AWSD
+            switch(e.key) {
+                case 'ArrowUp':
+                case 'w':
+                    currentSelected = Math.max(0, currentSelected - 2);
+                    break;
+                case 'ArrowDown':
+                case 's':
+                    currentSelected = Math.min(options.length - 1, currentSelected + 2);
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                    currentSelected = Math.max(0, currentSelected - 1);
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                    currentSelected = Math.min(options.length - 1, currentSelected + 1);
+                    break;
+                case ' ': // 空格键确认
+                    e.preventDefault();
+                    options[currentSelected].click();
+                    return;
+            }
+
+            // 限制索引范围
+            currentSelected = Math.max(0, Math.min(currentSelected, options.length - 1));
+            // 高亮选中选项
+            options[currentSelected].style.borderColor = '#3498db';
+        }
+
+        // 初始化键盘监听
+        document.addEventListener('keydown', handleKeyPress);
+
+        // 错题本切换按钮逻辑
+        const positionToggleBtn = document.getElementById('positionToggleBtn');
+        const errorBookSection = document.getElementById('errorBookSection');
+
+        positionToggleBtn.addEventListener('click', () => {
+            errorBookSection.classList.toggle('hidden');
+            positionToggleBtn.classList.toggle('hidden');
+            // 切换按钮文本
+            positionToggleBtn.textContent = errorBookSection.classList.contains('hidden') ? '⟩' : '⟨';
+        });
+
+        // 生成题目后重置选中状态
+        function generateQuestion() {
+            // 原有生成逻辑...
+            currentSelected = 0; // 新题目重置选中索引
+            setTimeout(() => {
+                const firstOption = document.querySelector('.option-btn');
+                if (firstOption) firstOption.style.borderColor = '#3498db';
+            }, 100);
+        }
 
 // 四级词汇模拟数据（可根据需要扩展）
 const vocabData = [
@@ -1156,6 +1318,7 @@ const vocabData = [
         let score = 0;
         let errorBook = JSON.parse(localStorage.getItem('cet4ErrorBook')) || [];
         let consecutiveCorrect = 0; // 连续答对次数
+        let consecutiveLearned = 0; // 连续学习已学单词次数（用户需求关键变量）
         let stars = []; // 存储当前星星元素（最多30个）
 
         // 初始化页面
@@ -1166,10 +1329,17 @@ const vocabData = [
 
         // 生成题目
         function generateQuestion() {
-        // 复习模式时仅选取已学习单词
-        const sourceWords = currentAppMode === 'review'
-            ? vocabData.filter(item => learnedWords.has(item.word))
-            : vocabData;
+        // 处理用户需求：连续学习3个已学单词后必出未学单词
+        let sourceWords;
+        if (currentAppMode === 'practice' && consecutiveLearned >= 3) {
+            const unlearnedWords = vocabData.filter(item => !learnedWords.has(item.word));
+            sourceWords = unlearnedWords.length > 0 ? unlearnedWords : vocabData; // 无未学单词时回退
+        } else {
+            // 复习模式时仅选取已学习单词
+            sourceWords = currentAppMode === 'review'
+                ? vocabData.filter(item => learnedWords.has(item.word))
+                : vocabData;
+        }
         if (sourceWords.length === 0) {
             alert(currentAppMode === 'review' ? '暂无已学习单词，请先练习！' : '无可用题目！');
             return;
@@ -1235,6 +1405,9 @@ const vocabData = [
                 if (!learnedWords.has(currentQuestion.correct.word)) {
                     learnedWords.add(currentQuestion.correct.word);
                     saveLearningProgress(); // 保存学习进度
+                    consecutiveLearned = 0; // 新学单词时重置计数
+                } else {
+                    consecutiveLearned += 1; // 已学单词时增加计数
                 }
                 // 处理连续答对星星动画
                 consecutiveCorrect++;
@@ -1353,6 +1526,7 @@ const vocabData = [
             currentMode = 'wordToChinese';
             document.getElementById('practiceSection').style.display = 'block';
             document.getElementById('errorBookSection').style.display = 'none';
+            document.getElementById('positionToggleBtn').style.display = 'none'; // 隐藏错题本按钮
             document.querySelector('.nav .active').classList.remove('active');
             this.classList.add('active');
             generateQuestion();
@@ -1363,6 +1537,7 @@ const vocabData = [
             currentMode = 'errorPractice';
             document.getElementById('practiceSection').style.display = 'block';
             document.getElementById('errorBookSection').style.display = 'block';
+            document.getElementById('positionToggleBtn').style.display = 'flex'; // 显示隐藏按钮
             document.querySelector('.nav .active').classList.remove('active');
             this.classList.add('active');
             generateErrorQuestion();
@@ -1405,6 +1580,8 @@ const vocabData = [
             const errorList = document.getElementById('errorList');
             // 将 errorList 元素的 innerHTML 属性设置为空字符串，即清空当前显示的所有错题项
             errorList.innerHTML = '';
+            // 按错误次数从高到低排序错题
+            errorBook.sort((a, b) => b.errorCount - a.errorCount);
             // 遍历 errorBook 数组，该数组包含了所有的错题信息
             errorBook.forEach((item, index) => {
                 // 创建一个新的 div 元素，用于表示单个错题项
@@ -1458,4 +1635,10 @@ const vocabData = [
         // 初始加载
         init();
         updateLearningProgress();
+        // 初始化时隐藏错题本按钮（默认进入词汇练习模式）
+        document.getElementById('positionToggleBtn').style.display = 'none';
+        document.getElementById('errorBookSection').style.display = 'none';
+        document.querySelector('.nav button.active').classList.remove('active');
+        document.getElementById('practiceBtn').classList.add('active');
+        generateQuestion();
     </script>
