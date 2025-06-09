@@ -58,6 +58,26 @@
             transform: scale(1.05); /* 激活时保持放大 */
             box-shadow: 0 2px 6px rgba(0,0,0,0.2); /* 激活阴影更明显 */
         }
+        #deleteStarBtn {
+            position: fixed;
+            top: 20px;
+            right: 70px;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.1);
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+        #deleteStarBtn:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
         #modeBtn {
             position: fixed;
             top: 20px;
@@ -145,16 +165,53 @@
             color: #7f8c8d;
         }
 
-        .learning-progress {
+        .learning-progress-btn {
             position: fixed;
             right: 20px;
             bottom: 20px;
             padding: 8px 16px;
+            background: rgba(0,0,0,0.1); /* 透明背景 */
+            border: none;
+            border-radius: 8px;
+            color: var(--text-color);
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .learning-progress-btn:hover {
+            background: rgba(0,0,0,0.2); /* 悬停加深 */
+        }
+        .reset-confirm {
+            display: none;
+            position: fixed;
+            right: 20px;
+            bottom: 70px; /* 按钮上方 */
+            padding: 15px;
             background: var(--bg-color);
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            color: var(--text-color);
-            font-size: 0.9em;
+            min-width: 180px;
+            z-index: 100;
+        }
+        .confirm-btns {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            justify-content: flex-end;
+        }
+        .confirm-yes,
+        .confirm-no {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .confirm-yes {
+            background: #3498db;
+            color: white;
+        }
+        .confirm-no {
+            background: #bdc3c7;
         }
 
         .error-book {
@@ -250,15 +307,42 @@
         .dark-mode .error-book h3 {
             color: var(--text-color);
         }
+        /* 总错词统计样式 */
+        .error-book-count {
+            position: fixed;
+            top: 120px;
+            right: 40px;
+            padding: 4px 8px;
+            background: #3498db;
+            color: white;
+            border-radius: 4px;
+            font-size: 0.9em;
+            z-index: 102;
+        }
+        .dark-mode .error-book-count {
+            background: #2d3748;
+            box-shadow: 0 2px 4px rgba(255,255,255,0.1);
+        }
 
         .error-item {
             padding: 15px;
             margin: 10px 0;
-            background: #fff3e0;
             border-radius: 8px;
             display: flex;
             align-items: center; /* 垂直居中 */
             justify-content: space-between; /* 子元素两端对齐 */
+        }
+        .error-item.correct-1 {
+            background: #e3f2fd; /* 蓝色 */
+        }
+        .error-item.correct-2 {
+            background: #e8f5e9; /* 绿色 */
+        }
+        .dark-mode .error-item.correct-1 {
+            background: #2a4365; /* 调整后更淡的蓝色 */
+        }
+        .dark-mode .error-item.correct-2 {
+            background: #2d4f37; /* 调整后更淡的绿色 */
         }
 
         .error-delete-btn {
@@ -303,8 +387,20 @@
         .star-glow {
             animation: starGlow 0.8s ease-in-out;
         }
+        .star-delete {
+            animation: starDelete 0.5s ease-out forwards;
+        }
         .star-fall {
             animation: starFall 1s ease-in forwards;
+            position: absolute;
+            pointer-events: none;
+            font-size: 20px;
+            /* 添加旋转动画 */
+            animation: starFall 1s ease-in forwards, starRotate 1s linear infinite;
+        }
+        @keyframes starRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
         @keyframes starPop {
             0% { transform: scale(0) translateY(0); opacity: 0; }
@@ -316,8 +412,27 @@
             50% { filter: drop-shadow(0 0 8px #ffd700); }
             100% { filter: drop-shadow(0 0 0px #ffd700); }
         }
+        @keyframes starDelete {
+            from {
+                transform: translate(0, 0) rotate(0deg);
+                opacity: 1;
+            }
+            to {
+                transform: translate(50px, -50px) rotate(360deg); /* 斜向上45°轨迹 + 360°旋转 */
+                opacity: 0;
+            }
+        }
         @keyframes starFall {
-            to { transform: translateY(100vh); opacity: 0; }
+            from {
+                transform: translate(0, 0) rotate(0deg);
+                opacity: 1;
+                filter: drop-shadow(0 0 2px #ffd700); /* 初始拖尾 */
+            }
+            to {
+                transform: translate(-15vw, 100vh) rotate(360deg); /* 斜向左下15%视口宽度 + 旋转 */
+                opacity: 0;
+                filter: drop-shadow(0 0 8px #ffd700); /* 加强拖尾 */
+            }
         }
         .dark-mode .celebrate {
             animation: dark-celebrate 1s ease-out forwards;
@@ -402,6 +517,7 @@
             <button id="practiceBtn" class="active">词汇练习</button>
             <button id="errorBookBtn">错题本</button>
             <button id="reviewBtn">复习模式</button>
+            <button id="deleteStarBtn">🌟</button>
             <button id="modeBtn">🌙</button> <!-- 添加模式切换按钮 -->
         </div>
     </div>
@@ -417,8 +533,47 @@
         <div class="feedback" id="feedback"></div>
         <!-- 用于显示当前得分的 div，类名为 stats，初始显示当前得分 0 -->
         <div class="stats" id="stats">当前得分：0</div>
-        <!-- 用于显示学习进度的 div，通过 id "learningProgress" 可在 JavaScript 中动态更新学习进度，类名为 learning-progress -->
-        <div id="learningProgress" class="learning-progress">已学习：0/0</div>
+        <!-- 学习进度透明按钮 -->
+        <button id="learningProgressBtn" class="learning-progress-btn">已学习：0/0</button>
+        <!-- 重置确认弹窗（初始隐藏） -->
+        <div id="resetConfirm" class="reset-confirm">
+            <p>是否重置学习进度？</p>
+            <div class="confirm-btns">
+                <button class="confirm-yes">是</button>
+                <button class="confirm-no">否</button>
+            </div>
+        </div>
+        <!-- 二次确认弹窗（初始隐藏） -->
+        <div id="doubleConfirm" class="reset-confirm" style="bottom: 130px;">
+            <p>确认重置学习进度？</p>
+            <div class="confirm-btns">
+                <button class="double-yes">确认</button>
+                <button class="double-no">取消</button>
+            </div>
+        </div>
+
+        <script>
+            // 绑定一级确认按钮事件
+            document.querySelector('.confirm-yes').addEventListener('click', () => {
+                document.getElementById('resetConfirm').style.display = 'none'; // 隐藏一级弹窗
+                document.getElementById('doubleConfirm').style.display = 'block'; // 显示二次确认弹窗
+            });
+
+            document.querySelector('.confirm-no').addEventListener('click', () => {
+                document.getElementById('resetConfirm').style.display = 'none'; // 隐藏一级弹窗
+            });
+
+            // 绑定二次确认按钮事件
+            document.querySelector('.double-yes').addEventListener('click', () => {
+                learnedWords.clear(); // 清空已学习单词
+                updateLearningProgress(); // 更新学习进度显示
+                document.getElementById('doubleConfirm').style.display = 'none'; // 隐藏二次弹窗
+            });
+
+            document.querySelector('.double-no').addEventListener('click', () => {
+                document.getElementById('doubleConfirm').style.display = 'none'; // 隐藏二次弹窗
+            });
+        </script>
     </div>
 
     <!-- 错题本区域，类名为 error-book，初始状态为隐藏，通过 id "errorBookSection" 可在 JavaScript 中操作该元素 -->
@@ -427,7 +582,8 @@
 
         <div class="error-book" id="errorBookSection">
             <!-- 错题本标题 -->
-            <h3>错题本（答对3次移除）</h3>
+            <div class="error-book-count">总错词：<span id="totalErrorCount">0</span></div>
+            <h3>错题本</h3>
             <!-- 用于显示错题列表的 div，通过 id "errorList" 可在 JavaScript 中动态添加错题项 -->
             <div id="errorList"></div>
         </div>
@@ -477,33 +633,55 @@
             let x, y;
             const scrollX = window.scrollX || window.pageXOffset;
             const scrollY = window.scrollY || window.pageYOffset;
-            do {
-                x = Math.random() * window.innerWidth;
-                y = Math.random() * window.innerHeight;
-                // 将视口坐标转换为文档绝对坐标
-                const docX = x + scrollX;
-                const docY = y + scrollY;
-                // 检查文档绝对坐标是否落在任意避开区域内
-                const isInAvoidRegion = avoidRegions.some(region => {
-                    return docX >= region.left && docX <= region.right && docY >= region.top && docY <= region.bottom;
-                });
-            } while (isInAvoidRegion); // 直到找到不在避开区域的位置
+            let isInAvoidRegionOrOverlap;
+        do {
+            x = Math.random() * window.innerWidth;
+            y = Math.random() * window.innerHeight;
+            // 将视口坐标转换为文档绝对坐标
+            const docX = x + scrollX;
+            const docY = y + scrollY;
+            // 检查文档绝对坐标是否落在任意避开区域内
+            const isInAvoidRegion = avoidRegions.some(region => {
+                return docX >= region.left && docX <= region.right && docY >= region.top && docY <= region.bottom;
+            });
+            // 检查与已存在星星的重叠（距离小于80px）
+            const hasOverlap = activeStars.some(existing => {
+                const dx = x - existing.x; // 视口坐标的x差
+                const dy = y - existing.y; // 视口坐标的y差
+                return Math.hypot(dx, dy) < 80;
+            });
+            isInAvoidRegionOrOverlap = isInAvoidRegion || hasOverlap;
+        } while (isInAvoidRegionOrOverlap); // 直到找到不在避开区域且不重叠的位置
             return { x, y };
         }
 
         // 生成星星动画（修改后的逻辑）
-        function createCelebrationStars() {
-            for (let i = 0; i < 8; i++) {
-                const star = document.createElement('div');
-                star.className = 'star star-glow';
-                const { x, y } = getSafeStarPosition();
-                star.style.left = `${x}px`;
-                star.style.top = `${y}px`;
-                document.body.appendChild(star);
-                // 添加消失动画
-                setTimeout(() => star.remove(), 1500);
+        let activeStars = []; // 存储当前存在的星星坐标
+
+function createCelebrationStars() {
+    for (let i = 0; i < 8; i++) {
+        const star = document.createElement('div');
+        star.className = 'star star-glow';
+        const position = getSafeStarPosition(); // 获取安全位置（避开区域且不重叠）
+        activeStars.push(position); // 记录新星星的位置
+        star.style.left = `${position.x}px`;
+        star.style.top = `${position.y}px`;
+        document.body.appendChild(star);
+        // 添加消失动画，并在移除时从activeStars中删除该位置
+        setTimeout(() => {
+            // 当星星总数超过30时触发流星效果
+            if (activeStars.length > 30) {
+                star.classList.remove('star-glow');
+                star.classList.add('star-fall'); // 添加下落动画类
+                // 等待动画完成后移除（动画时长1秒）
+                setTimeout(() => star.remove(), 1000);
+            } else {
+                star.remove();
             }
-        }
+            activeStars = activeStars.filter(existing => existing !== position);
+        }, 1000);
+    }
+}
 
         // 四级词汇模拟数据（可根据需要扩展
 // 初始化主题模式（读取localStorage）
@@ -522,6 +700,18 @@ const toggleTheme = () => {
 };
 
 document.getElementById('modeBtn').addEventListener('click', toggleTheme); // 绑定点击事件
+
+        // 绑定删除最后一个星星按钮点击事件
+        document.getElementById('deleteStarBtn').addEventListener('click', () => {
+            const stars = document.querySelectorAll('.star');
+            if (stars.length > 0) {
+                const lastStar = stars[stars.length - 1];
+                lastStar.classList.add('star-delete'); // 添加删除动画类
+                lastStar.addEventListener('animationend', () => {
+                    lastStar.remove(); // 动画结束后移除元素
+                }, { once: true }); // 只监听一次动画结束
+            }
+        });
 
         // 绑定错题本按钮点击事件
         document.getElementById('errorBookBtn').addEventListener('click', () => {
@@ -1344,16 +1534,27 @@ const vocabData = [
             alert(currentAppMode === 'review' ? '暂无已学习单词，请先练习！' : '无可用题目！');
             return;
         }
-            const allWords = [...sourceWords]; // 使用过滤后的单词源
+            // 处理单词数量不足问题（防止无限循环崩溃）
+            const allWords = sourceWords.length > 0 ? [...sourceWords] : [...vocabData]; // 只要有未学单词就优先使用，确保高频出现
+            if (allWords.length === 0) {
+                alert('无可用词汇数据，请检查词库！');
+                return;
+            }
             const correctWord = allWords[Math.floor(Math.random() * allWords.length)];
             
-            // 生成四个选项（包含正确选项）
+            // 生成四个选项（包含正确选项，添加最大尝试次数防止死循环）
             const options = [correctWord];
-            while (options.length < 4) {
+            let attempts = 0;
+            while (options.length < 4 && attempts < 10) {
                 const randomWord = allWords[Math.floor(Math.random() * allWords.length)];
                 if (!options.some(opt => opt.word === randomWord.word)) {
                     options.push(randomWord);
                 }
+                attempts++;
+            }
+            // 若仍不足则补充随机单词（可能重复但避免崩溃）
+            while (options.length < 4) {
+                options.push(allWords[Math.floor(Math.random() * allWords.length)]);
             }
             options.sort(() => Math.random() - 0.5);
 
@@ -1373,7 +1574,10 @@ const vocabData = [
             optionsEl.innerHTML = '';
 
             if (currentMode === 'wordToChinese') {
-                questionEl.textContent = `选出 [${currentQuestion.correct.word}] 的正确中文意思：`;
+                const word = currentQuestion.correct.word;
+                const isLearned = learnedWords.has(word);
+                const color = isLearned ? 'var(--text-color)' : '#3498db'; // 白色使用主题文本色，蓝色使用#3498db
+                questionEl.innerHTML = `选出 [ <span style="color: ${color};">${word}</span> ] 的正确中文意思：`;
             } else {
                 questionEl.textContent = `选出 [${currentQuestion.correct.chinese}] 对应的英文单词：`;
             }
@@ -1402,6 +1606,23 @@ const vocabData = [
                     feedbackEl.className = 'feedback correct';
                     document.getElementById('feedback').classList.add('celebrate');
                     // 记录已学习单词
+        // 学习进度按钮点击事件
+        document.getElementById('learningProgressBtn').addEventListener('click', () => {
+            document.getElementById('resetConfirm').style.display = 'block';
+        });
+        // 确认弹窗否按钮
+        document.querySelector('.confirm-no').addEventListener('click', () => {
+            document.getElementById('resetConfirm').style.display = 'none';
+        });
+        // 确认弹窗是按钮（首次确认）
+        document.querySelector('.confirm-yes').addEventListener('click', () => {
+            if (confirm('确认重置？此操作不可恢复！')) {
+                learnedWords.clear(); // 清空已学习集合
+                updateLearningProgress();
+                saveLearningProgress();
+                document.getElementById('resetConfirm').style.display = 'none';
+            }
+        });
                 if (!learnedWords.has(currentQuestion.correct.word)) {
                     learnedWords.add(currentQuestion.correct.word);
                     saveLearningProgress(); // 保存学习进度
@@ -1465,7 +1686,7 @@ const vocabData = [
                 } else {
                     generateQuestion();
                 }
-            }, 2000);
+            }, 1500);
 
             // 创建随机位置星星（避开主要界面区域）
             function createStar() {
@@ -1576,6 +1797,9 @@ const vocabData = [
 
         // 更新错题本显示
         function updateErrorBookDisplay() {
+            // 更新总错词统计
+            const totalErrorCount = errorBook.length;
+            document.getElementById('totalErrorCount').textContent = totalErrorCount;
             // 通过 document.getElementById 方法获取页面上 id 为 'errorList' 的元素，该元素用于显示错题列表
             const errorList = document.getElementById('errorList');
             // 将 errorList 元素的 innerHTML 属性设置为空字符串，即清空当前显示的所有错题项
@@ -1587,12 +1811,12 @@ const vocabData = [
                 // 创建一个新的 div 元素，用于表示单个错题项
                 const div = document.createElement('div');
                 // 为新创建的 div 元素设置类名 'error-item'，以便应用相应的 CSS 样式
-                div.className = 'error-item';
+                div.className = 'error-item' + (item.correctCount === 1 ? ' correct-1' : item.correctCount === 2 ? ' correct-2' : '');
                 // 为新创建的 div 元素设置内部 HTML 内容，包含错题的单词、中文释义、错误次数和正确次数，以及一个删除按钮
                 div.innerHTML = `
                     <div>
                         <p>${item.word} - ${item.chinese}</p>
-                        <small>错误次数：${item.errorCount} | 正确次数：${item.correctCount}</small>
+                        <small>错词数：${item.errorCount} | 正确次数：${item.correctCount}</small>
                     </div>
                     <button class="error-delete-btn">-</button>
                 `;
@@ -1624,7 +1848,7 @@ const vocabData = [
 
         // 更新学习进度显示
         const updateLearningProgress = () => {
-            document.getElementById('learningProgress').textContent = `已学习：${learnedWords.size}/${totalWords}`;
+            document.getElementById('learningProgressBtn').textContent = `已学习：${learnedWords.size}/${totalWords}`;
         };
 
         // 保存学习进度到localStorage
@@ -1635,6 +1859,11 @@ const vocabData = [
         // 初始加载
         init();
         updateLearningProgress();
+
+        // 学习进度按钮点击事件（显示重置弹窗）
+        document.getElementById('learningProgressBtn').addEventListener('click', () => {
+            document.getElementById('resetConfirm').style.display = 'block';
+        });
         // 初始化时隐藏错题本按钮（默认进入词汇练习模式）
         document.getElementById('positionToggleBtn').style.display = 'none';
         document.getElementById('errorBookSection').style.display = 'none';
